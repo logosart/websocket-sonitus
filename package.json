@@ -12,6 +12,19 @@
     "socket.io": "^4.7.4"
   },
   "devDependencies": {
-    "nodemon": "^3.0.3"
-  }
+    "nodemon": "^3.1.14"
+  },
+  "description": "",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/logosart/websocket-sonitus.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/logosart/websocket-sonitus/issues"
+  },
+  "homepage": "https://github.com/logosart/websocket-sonitus#readme"
 }
