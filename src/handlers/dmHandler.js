@@ -1,28 +1,61 @@
-import { supabase } from '../config/supabase.js';
+import { createClient } from '@supabase/supabase-js';
 
 export const dmHandler = (io, socket) => {
-  // Entrar na sala da conversa
-  socket.on('dm:join', (conversationId) => {
+  const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY,
+    {
+      global: {
+        headers: {
+          Authorization: `Bearer ${socket.accessToken}`,
+        },
+      },
+    }
+  );
+
+  socket.on('join_dm', (conversationId) => {
     socket.join(`dm:${conversationId}`);
+    console.log(`${socket.userId} entrou na conversa ${conversationId}`);
   });
 
-  // Enviar DM
-  socket.on('dm:message', async ({ conversationId, content }) => {
+  socket.on('send_dm', async ({ conversationId, content }) => {
+    console.log("Token:", socket.accessToken ? "✅ presente" : "❌ NULO");
+    console.log("UserId:", socket.userId);
+    console.log("💾 SALVANDO NO BANCO - ConvID:", conversationId, "Content:", content);
+
     try {
-      const { data: message, error } = await supabase
+      const { data, error } = await supabase
         .from('direct_messages')
-        .insert([{ conversation_id: conversationId, author_id: socket.user.id, content }])
+        .insert([{
+          conversation_id: conversationId,
+          sender_id: socket.userId,
+          content
+        }])
         .select(`
-          *,
-          author:profiles!direct_messages_author_id_fkey(id, username, display_name, avatar_url)
+          id,
+          content,
+          created_at,
+          sender_id,
+          conversation_id,
+          profiles:sender_id(username)
         `)
         .single();
 
       if (error) throw error;
 
-      io.to(`dm:${conversationId}`).emit('dm:message', message);
+      console.log("✅ Mensagem salva com ID:", data.id, "no ConvID real:", data.conversation_id);
+
+      io.to(`dm:${conversationId}`).emit('new_dm', {
+        id: data.id,
+        content: data.content,
+        created_at: data.created_at,
+        sender_id: data.sender_id,
+        sender_username: data.profiles.username
+      });
+
     } catch (err) {
-      socket.emit('error', { message: err.message });
+      console.error('Erro ao salvar mensagem:', err.message);
+      socket.emit('error', { message: 'Erro ao enviar mensagem' });
     }
   });
 };

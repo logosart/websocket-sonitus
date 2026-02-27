@@ -20,12 +20,14 @@ const io = new Server(httpServer, {
 io.use(authMiddleware);
 
 io.on('connection', (socket) => {
-  console.log(`✅ Conectado: ${socket.user.email}`);
+  const token = socket.handshake.auth?.token;
+  socket.accessToken = token;
+  socket.userId = socket.user.id; // 👈 ADICIONE ESTA LINHA
 
-  // Cada usuário entra em uma sala pessoal (para receber calls diretas)
-  socket.join(`user:${socket.user.id}`);
+  console.log(`✅ Conectado: ${socket.user.email} (${socket.userId})`);
 
-  // Registrar handlers
+  socket.join(`user:${socket.userId}`);
+
   chatHandler(io, socket);
   dmHandler(io, socket);
   callHandler(io, socket);
